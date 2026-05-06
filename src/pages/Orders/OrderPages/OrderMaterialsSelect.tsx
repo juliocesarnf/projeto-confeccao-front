@@ -9,7 +9,7 @@ function OrderSelectMaterials() {
   const [creatingKit, setCreatingKit] = useState(false);
   const [kitMessage, setKitMessage] = useState<string | null>(null);
 
-  const dueDate = order ? new Date(order.prazo) : null;
+  const dueDate = order ? new Date(order.dueDate) : null;
   const today = new Date();
   const diffDays = order && dueDate
     ? Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
@@ -60,7 +60,7 @@ function OrderSelectMaterials() {
       <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-4">
         <header className="flex flex-col gap-3 border-b pb-3">
           <div>
-            <h1 className="text-xl font-semibold">Order #{order?.id ?? "—"}</h1>
+            <h1 className="text-xl font-semibold">Pedido #{order?.id ?? "—"}</h1>
             <p className="text-sm text-gray-500 mt-1">Selecionar Materiais</p>
           </div>
 
@@ -72,12 +72,12 @@ function OrderSelectMaterials() {
             </span>
             <span>
               Total: <span className="font-medium text-gray-800">
-                $ {order ? Number(order.valor_total || 0).toFixed(2) : "0.00"}
+                $ {order ? Number(order.totalValue || 0).toFixed(2) : "0.00"}
               </span>
             </span>
             <span>
               Quantidade total: <span className="font-medium text-gray-800">
-                {order?.total_quantidade ?? "—"}
+                {order?.totalQuantity ?? "—"}
               </span>
             </span>
           </div>
@@ -93,18 +93,18 @@ function OrderSelectMaterials() {
             {orderMaterialsSelect.length > 0 ? (
               orderMaterialsSelect.map((item) => (
                 <div
-                  key={`${item.variacao_id}-${item.material}`}
+                  key={`${item.variationId}-${item.material}`}
                   className="grid grid-cols-12 px-4 py-3 items-center border-t"
                 >
                   <div className="col-span-9 flex flex-col">
                     <span className="font-medium">{item.material}</span>
                     <span className="text-xs text-gray-500">
-                      {item.variacao} • {item.unidade_base}
+                      {item.variation} • {item.base_unit}
                     </span>
                   </div>
                   <div className="col-span-3 text-right">
                     <span className="px-3 py-1 rounded-md text-sm font-medium bg-blue-50 text-blue-700">
-                      {item.quantidade}
+                      {item.quantity}
                     </span>
                   </div>
                 </div>

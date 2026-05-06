@@ -10,7 +10,7 @@ export function MaterialsProvider({ children }: any) {
 
   useEffect(() => {
     async function load() {
-      const data = await MaterialsService.getAll();
+      const data = await MaterialsService.listAllVariations();
       setMaterials(data);
       setLoading(false);
     }

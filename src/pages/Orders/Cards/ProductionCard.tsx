@@ -1,13 +1,14 @@
 import { useNavigate } from "react-router-dom";
+import type { Order } from "../../../types/OrderType";
 
 type Props = {
-  order: any;
+  order: Order;
 };
 
 function ProductionCard({ order }: Props) {
   const navigate = useNavigate();
 
-  const data = new Date(order.deadline);
+  const data = new Date(order.dueDate);
   const hoje = new Date();
 
   const diffTime = data.getTime() - hoje.getTime();
@@ -27,7 +28,7 @@ function ProductionCard({ order }: Props) {
       className={`relative px-2 py-1 border rounded-md cursor-pointer active:scale-95 transition ${bgColor} flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 w-full`}
     >
       <div className="min-w-0 w-full">
-        <p className="font-semibold truncate">{order.cliente_nome}</p>
+        <p className="font-semibold truncate">{order.customerName}</p>
         <p className="text-sm">
           Prazo: {data.toLocaleDateString("pt-BR")}
         </p>

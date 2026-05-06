@@ -1,200 +1,160 @@
-import { useEffect, useMemo, useState } from "react";
-import EmployeesService from "../../../services/EmployeesService";
-import ProductService from "../../../services/ProductsService";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import ProductService from "../../../services/ProductService";
 import { useProduction } from "../../../context/ProductionContext";
-import type {
-  ProductProcess,
-  ProductToDo,
-  OrderTeamAssignment,
-} from "../../../types/ProductType";
+import type { ProductToDo } from "../../../types/ProductType";
+import type { AssignmentMap, Worker } from "../../../types/WorkerType";
+import WorkerService from "../../../services/WorkerService";
+import OrderHeader from "../Header/OrderHeader";
 
 function OrderTeam() {
-  const { order, orderProducts, setOrderTeamAssignments } = useProduction();
+  const navigate = useNavigate();
+  const { order, orderProducts } = useProduction();
 
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [productsWithProcesses, setProductsWithProcesses] = useState<
-    (ProductToDo & { processos?: ProductProcess[] })[]
-  >(orderProducts);
-  const [assignments, setAssignments] = useState<OrderTeamAssignment[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [productsWithProcesses, setProductsWithProcesses] = useState<ProductToDo[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentMap>({});
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [employeeData, productsResponse] = await Promise.all([
-          EmployeesService.getEmployees(),
-          orderProducts.length > 0
-            ? ProductService.getProcessById(orderProducts)
-            : Promise.resolve(orderProducts),
-        ]);
+    async function loadWorkers() {
+      const w = await WorkerService.getWorkers();
+      setWorkers(w);
+    }
+    loadWorkers();
+  }, []);
 
-        setEmployees(employeeData);
+  useEffect(() => {
+    async function loadProcesses() {
+      if (!orderProducts || orderProducts.length === 0) return;
+      const p = await ProductService.getProcessesByProductList(orderProducts);
+      setProductsWithProcesses(p);
+    }
+    loadProcesses();
+  }, [orderProducts]);
 
-        const loadedProducts = Array.isArray(productsResponse)
-          ? productsResponse
-          : orderProducts;
+  function toggleWorker(productId: number, processId: number, workerId: number) {
+    setAssignments((prev) => {
+      const product = prev[productId] ?? {};
+      const current = product[processId] ?? [];
+      const updated = current.includes(workerId)
+        ? current.filter((id) => id !== workerId)
+        : [...current, workerId];
 
-        setProductsWithProcesses(loadedProducts);
-
-        const initialAssignments = loadedProducts.flatMap(
-          (product: ProductToDo & { processos?: ProductProcess[] }) =>
-            (product.processos ?? []).map(process => ({
-              productId: product.id_Produto,
-              processId: process.id,
-              employeeId: null,
-            }))
-        );
-
-        setAssignments(initialAssignments);
-        setOrderTeamAssignments(initialAssignments);
-      } catch (error) {
-        console.error("Erro ao carregar dados do time:", error);
-      }
-    };
-
-    void loadData();
-  }, [orderProducts, setOrderTeamAssignments]);
-
-  const dueDate = order ? new Date(order.prazo) : null;
-  const today = new Date();
-  const diffDays = order && dueDate
-    ? Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    : 0;
-
-  const statusColor = order
-    ? diffDays <= 1
-      ? "text-red-600"
-      : diffDays <= 3
-      ? "text-yellow-600"
-      : "text-blue-600"
-    : "text-gray-600";
-
-  const handleSelectEmployee = (
-    productId: number,
-    processId: number,
-    employeeId: number | null
-  ) => {
-    const nextAssignments = assignments.map(item =>
-      item.productId === productId && item.processId === processId
-        ? { ...item, employeeId }
-        : item
-    );
-
-    setAssignments(nextAssignments);
-    setOrderTeamAssignments(nextAssignments);
-  };
-
-  const employeeOptions = useMemo(
-    () =>
-      employees.map(employee => ({
-        id: employee.id,
-        label: employee.nome ?? employee.name ?? `Funcionário ${employee.id}`,
-      })),
-    [employees]
-  );
-
-  if (!order) {
-    return <p>Pedido não encontrado</p>;
+      return {
+        ...prev,
+        [productId]: { ...product, [processId]: updated },
+      };
+    });
   }
+
+  function getSelected(productId: number, processId: number): number[] {
+    return assignments[productId]?.[processId] ?? [];
+  }
+
+  function getWorkerName(id: number): string {
+    return workers.find((w) => w.id === id)?.name ?? "";
+  }
+
+  const dropdownKey = (productId: number, processId: number) =>
+    `${productId}-${processId}`;
+
+  if (!order) return <p className="p-4 text-gray-500">Pedido não encontrado</p>;
 
   return (
     <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 py-4">
-      <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-4">
-        <header className="flex flex-col gap-3 border-b pb-3">
-          <div>
-            <h1 className="text-xl font-semibold">Order #{order.id}</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Alocar processo para cada produto e selecionar funcionário
-            </p>
-          </div>
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-3 text-sm text-gray-500 hover:text-gray-700"
+      >
+        ← Back
+      </button>
 
-          <div className="text-sm text-gray-500 flex flex-wrap gap-4">
-            <span>
-              Due date: <span className={`font-medium ${statusColor}`}>
-                {dueDate ? dueDate.toLocaleDateString("en-US") : "—"}
-              </span>
-            </span>
+      <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-6">
+        <OrderHeader title="Selecionar Equipe" />
 
-            <span>
-              Total: <span className="font-medium text-gray-800">
-                $ {order ? Number(order.valor_total || 0).toFixed(2) : "0.00"}
-              </span>
-            </span>
+        {productsWithProcesses.map((product) => (
+          <div key={product.productId} className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold text-gray-700">
+              {product.name}
+            </h3>
 
-            <span>
-              Quantidade: <span className="font-medium text-gray-800">
-                {order?.total_quantidade ?? "—"}
-              </span>
-            </span>
-          </div>
-        </header>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium">Processo</th>
+                    <th className="px-4 py-3 text-left font-medium">Selecionar</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {product.processes?.map((process) => {
+                    const key = dropdownKey(product.productId, process.id);
+                    const selected = getSelected(product.productId, process.id);
+                    const isOpen = openDropdown === key;
 
-        {productsWithProcesses.length === 0 ? (
-          <div className="p-4 text-gray-500">
-            Não há produtos com processos para mostrar.
-          </div>
-        ) : (
-          productsWithProcesses.map(product => (
-            <section
-              key={product.id_Produto}
-              className="bg-gray-50 border rounded-lg p-4"
-            >
-              <div className="mb-3">
-                <h2 className="text-lg font-semibold">{product.nome}</h2>
-                <p className="text-sm text-gray-500">
-                  Quantidade: {product.quantidade}
-                </p>
-              </div>
+                    return (
+                      <tr key={process.id} className="bg-white hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-gray-700 font-medium">
+                          {process.name}
+                        </td>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm text-gray-700">
-                  <thead>
-                    <tr className="border-b bg-gray-100 text-xs uppercase tracking-wide text-gray-600">
-                      <th className="px-3 py-2">Processo</th>
-                      <th className="px-3 py-2">Funcionário</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(product.processos ?? []).map(process => {
-                      const assignment = assignments.find(
-                        item =>
-                          item.productId === product.id_Produto &&
-                          item.processId === process.id
-                      );
-
-                      return (
-                        <tr key={process.id} className="border-b last:border-b-0">
-                          <td className="px-3 py-3">{process.nome}</td>
-                          <td className="px-3 py-3">
-                            <select
-                              value={assignment?.employeeId ?? ""}
-                              onChange={event =>
-                                handleSelectEmployee(
-                                  product.id_Produto,
-                                  process.id,
-                                  event.target.value
-                                    ? Number(event.target.value)
-                                    : null
-                                )
-                              }
-                              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700"
+                        <td className="px-4 py-3">
+                          <div className="relative inline-block">
+                            <button
+                              onClick={() => setOpenDropdown(isOpen ? null : key)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                             >
-                              <option value="">Selecione</option>
-                              {employeeOptions.map(employee => (
-                                <option key={employee.id} value={employee.id}>
-                                  {employee.label}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          ))
-        )}
+                              Responsáveis
+                              <span className={`transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}>
+                                ▾
+                              </span>
+                            </button>
+
+                            {isOpen && (
+                              <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg min-w-[200px] max-h-52 overflow-y-auto">
+                                {workers.length === 0 ? (
+                                  <p className="px-4 py-3 text-xs text-gray-400">Nenhum funcionário cadastrado</p>
+                                ) : (
+                                  workers.map((worker) => {
+                                    const checked = selected.includes(worker.id);
+                                    return (
+                                      <label
+                                        key={worker.id}
+                                        className="flex items-center gap-2.5 px-4 py-2.5 cursor-pointer hover:bg-gray-50 text-sm text-gray-700"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={() =>
+                                            toggleWorker(product.productId, process.id, worker.id)
+                                          }
+                                          className="accent-blue-600 w-3.5 h-3.5"
+                                        />
+                                        {worker.name}
+                                      </label>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+
+        <button
+          onClick={() => {}}
+          className="mt-2 w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+        >
+          Confirmar Equipe
+        </button>
       </div>
     </div>
   );

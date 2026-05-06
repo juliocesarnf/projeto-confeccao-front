@@ -1,13 +1,25 @@
-import { useState, type ReactNode } from "react";
-import useOrders from "../useOrders";
+import { useEffect, useState, type ReactNode } from "react";
 import NewCard from "../Cards/NewCard";
 import DoneCard from "../Cards/DoneCard";
 import ProductionCard from "../Cards/ProductionCard";
+import OrdersService from "../../../services/OrderService";
+import type { Order } from "../../../types/OrderType";
 
 type OrderStatus = "novo" | "em_producao" | "confirmado";
 
 function Orders(): ReactNode {
-  const { orders, loading, error } = useOrders();
+
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      const orders = await OrdersService.listAll();
+      setOrders(orders);
+    };
+
+    fetchOrders();
+  }, []);
+
   const [status, setStatus] = useState<OrderStatus>("novo");
 
   const baseClasses =
@@ -22,9 +34,6 @@ function Orders(): ReactNode {
   const filteredOrders = orders.filter(
     (order) => order.status === status
   );
-
-  if (loading) return <p>Carregando...</p>;
-  if (error) return <p>{error}</p>;
 
   return (
     <div className="w-full max-w-6xl flex flex-col gap-4 px-0 sm:px-4">

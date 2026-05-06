@@ -1,34 +1,34 @@
-export type MaterialVariacao = {
+export type MaterialVariation = {
   id: number;
-  variacao: string;
-  estoque: number;
+  variation: string;
+  stock: number;
 };
 
 export type Material = {
   id: number;
-  nome: string;
-  unidade_base: string;
+  name: string;
+  baseUnit: string;
 };
 
 export type MaterialVariationInfo = {
-  variacao_id: number;
+  variationId: number;
   material: string;
-  variacao: string;
-  quantidade: number;
-  unidade_base: string;
+  variation: string;
+  quantity: number;
+  baseUnit: string;
 };
 
-export type ProdutoMaterial = {
+export type ProductMaterial = {
   id: number;
-  produto_id: number;
-  quantidade: number;
-  variacao_produto_id: number;
-  material_variacao: MaterialVariacao;
+  productId: number;
+  quantity: number;
+  productVariationId: number;
+  materialVariation: MaterialVariation;
   material: Material;
 };
 
-export type ProdutoMaterialResponse = {
-  produto_id: number;
-  variacao_produto_id: number;
-  materiais: ProdutoMaterial[];
+export type ProductMaterialResponse = {
+  productId: number;
+  productVariationId: number;
+  materials: ProductMaterial[];
 };

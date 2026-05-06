@@ -1,12 +1,29 @@
-export type Pedido = {
-  cliente_nome: string;
-  data: string;
+export type Order = {
   id: number;
-  prazo: string;
+  createdAt: string;
   status: string;
-  total_itens: number;
-  total_quantidade: number;
-  valor_total: number;
+  totalValue: string;
+  dueDate: string;
+  customerName: string;
+  totalItems: string;
+  totalQuantity: string;
 };
 
-export type 
+export type OrderItem = {
+  id: number;
+  quantity: number;
+  unitPrice: number;
+  fulfilledQuantity: number;
+  status: string;
+  product: {
+    id: number;
+    name: string;
+  };
+  variation: {
+    id: number;
+    size: string;
+    color: string;
+    sku: string;
+  };
+ 
+};

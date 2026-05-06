@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useProduction, } from "../../../context/ProductionContext";
-import ProductService from "../../../services/ProductsService";
+import ProductService from "../../../services/ProductService";
 import {
   type Material,
-  type MaterialVariacao,
+  type MaterialVariation,
   type MaterialVariationInfo,
-  type ProdutoMaterial,
+  type ProductMaterial,
 } from "../../../types/MaterialType";
 import type { RequiredProduct } from "../../../types/ProductType";
+import OrderHeader from "../Header/OrderHeader";
 
 function OrderMaterials() {
+  
   const [view, setView] = useState<"required" | "stock">("required");
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { order, orderProductsVariations: orderProducts, setOrderMaterialsSelect } = useProduction();
+  const { order, orderProductsVariations, orderProducts, setOrderMaterialsSelect } = useProduction();
 
   const [requiredMaterials, setRequiredMaterials] = useState<
     MaterialResult[]
@@ -27,17 +29,17 @@ function OrderMaterials() {
 
   useEffect(() => {
     async function loadMaterials() {
-      const productsIdsList = orderProducts.map(
+      const productsIdList = orderProductsVariations.map(
         (item) => item.productVariationId
       );
 
       const allMaterials =
         await ProductService.getProductMaterialsByIdList(
-          productsIdsList
+          productsIdList
         );
 
       const result = calculateMaterials(
-        orderProducts,
+        orderProductsVariations,
         allMaterials
       );
 
@@ -56,7 +58,7 @@ function OrderMaterials() {
       ? requiredMaterials
       : stockMaterials;
 
-  const dueDate = order ? new Date(order.prazo) : null;
+  const dueDate = order ? new Date(order.dueDate) : null;
   const today = new Date();
   const diffDays = (order && dueDate)
     ? Math.ceil(
@@ -87,34 +89,7 @@ function OrderMaterials() {
       <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-4">
         
         {/* HEADER */}
-        <header className="flex flex-col gap-3 border-b pb-3">
-          <div>
-            <h1 className="text-xl font-semibold">Order #{order?.id ?? "—"}</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Materiais Necessários
-            </p>
-          </div>
-
-          <div className="text-sm text-gray-500 flex flex-wrap gap-4">
-            <span>
-              Due date: <span className={`font-medium ${statusColor}`}>
-                {dueDate ? dueDate.toLocaleDateString("en-US") : "—"}
-              </span>
-            </span>
-
-            <span>
-              Total: <span className="font-medium text-gray-800">
-                $ {order ? Number(order.valor_total || 0).toFixed(2) : "0.00"}
-              </span>
-            </span>
-
-            <span>
-              Quantidade total: <span className="font-medium text-gray-800">
-                {order?.total_quantidade ?? "—"}
-              </span>
-            </span>
-          </div>
-        </header>
+        <OrderHeader title='Materiais do Pedido' />
 
         {/* TABS */}
         <div className="flex gap-2">
@@ -155,17 +130,17 @@ function OrderMaterials() {
           <div>
             {visibleMaterials.map((item) => (
               <div
-                key={item.material_variacao.id}
+                key={item.materialVariation.id}
                 className="grid grid-cols-12 px-4 py-3 items-center"
               >
                 {/* MATERIAL */}
                 <div className="col-span-9 flex flex-col">
                   <span className="font-medium">
-                    {item.material.nome}
+                    {item.material.name}
                   </span>
 
                   <span className="text-xs text-gray-500">
-                    {item.material_variacao.variacao}
+                    {item.materialVariation.variation}
                   </span>
                 </div>
 
@@ -213,7 +188,7 @@ export default OrderMaterials;
 
 type MaterialResult = {
   material: Material;
-  material_variacao: MaterialVariacao;
+  materialVariation: MaterialVariation;
   quantity: number;
 };
 
@@ -223,29 +198,29 @@ type MaterialResult = {
 
 function calculateMaterials(
   orderProducts: RequiredProduct[],
-  allMaterials: ProdutoMaterial[]
+  allMaterials: ProductMaterial[]
 ) {
   const totalNeedMap: Record<number, MaterialResult> = {};
 
   for (const product of orderProducts) {
     const materials = allMaterials.filter(
       (mat) =>
-        mat.variacao_produto_id ===
+        mat.productVariationId ===
         product.productVariationId
     );
 
     for (const mat of materials) {
-      const id = mat.material_variacao.id;
+      const id = mat.materialVariation.id;
 
       const need =
         product.quantityRequired *
-        mat.quantidade;
+        mat.quantity;
 
       if (!totalNeedMap[id]) {
         totalNeedMap[id] = {
           material: mat.material,
-          material_variacao:
-            mat.material_variacao,
+          materialVariation:
+            mat.materialVariation,
           quantity: 0,
         };
       }
@@ -261,7 +236,7 @@ function calculateMaterials(
     const item = totalNeedMap[id];
 
     const stock =
-      item.material_variacao.estoque;
+      item.materialVariation.stock;
 
     const needed = item.quantity;
 
@@ -291,11 +266,11 @@ function calculateMaterials(
   const totalMaterials: MaterialVariationInfo[] = Object.values(
     totalNeedMap
   ).map((item) => ({
-    variacao_id: item.material_variacao.id,
-    material: item.material.nome,
-    variacao: item.material_variacao.variacao,
-    quantidade: item.quantity,
-    unidade_base: item.material.unidade_base,
+    variationId: item.materialVariation.id,
+    material: item.material.name,
+    variation: item.materialVariation.variation,
+    quantity: item.quantity,
+    baseUnit: item.material.baseUnit,
   }));
 
   return {

@@ -1,25 +1,6 @@
 import { useEffect, useState } from "react";
-import OrdersService from "../../services/OrdersService";
-
-export interface OrderItem {
-  id: number;
-  quantidade: number;
-  quantidade_atendida: number;
-  preco_unitario: number;
-  status: string;
-
-  produto: {
-    id: number;
-    nome: string;
-  };
-
-  variacao: {
-    id: number;
-    tamanho: string;
-    cor: string;
-    sku: string;
-  };
-}
+import OrdersService from "../../services/OrderService";
+import type { OrderItem } from "../../types/OrderType";
 
 function useOrderItems(orderId?: string) {
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -32,8 +13,7 @@ function useOrderItems(orderId?: string) {
     async function loadItems() {
       try {
         setLoading(true);
-
-        const data = await OrdersService.listOrderItems(Number(orderId));
+        const data = await OrdersService.getOrderItems(Number(orderId));
         setItems(data);
       } catch (e) {
         setError("Erro ao carregar itens");

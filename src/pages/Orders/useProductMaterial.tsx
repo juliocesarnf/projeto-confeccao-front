@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import ProductsService from "../../services/ProductsService";
+import ProductsService from "../../services/ProductService";
 
 export interface ProductMaterial {
   id: number;

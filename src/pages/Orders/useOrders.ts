@@ -1,16 +1,6 @@
 import { useEffect, useState } from "react";
-import OrdersService from "../../services/OrdersService";
-
-export interface Order {
-  id: number;
-  data: string;
-  status: "novo" | "em_producao" | "confirmado";
-  valor_total: number;
-  prazo: string;
-  cliente_nome: string;
-  total_itens: string;
-  total_quantidade: string;
-}
+import OrdersService from "../../services/OrderService";
+import type { Order } from "../../types/OrderType";
 
 function useOrders() {
   const [orders, setOrders] = useState<Order[]>([]);

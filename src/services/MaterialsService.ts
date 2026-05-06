@@ -9,7 +9,15 @@ const MaterialsService = {
   },
 
   async createKit(materials: MaterialVariationInfo[]): Promise<any> {
-    const response = await API.post("/materiais/variacoes/remover-estoque", materials);
+    const payload = materials.map((material) => ({
+      variacao_id: material.variationId,
+      material: material.material,
+      variacao: material.variation,
+      quantidade: material.quantity,
+      unidade_base: material.base_unit,
+    }));
+
+    const response = await API.post("/materiais/variacoes/remover-estoque", payload);
     return response.data;
   }
 };

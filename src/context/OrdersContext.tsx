@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import OrdersService from "../services/OrdersService";
+import OrdersService from "../services/OrderService";
+import type { Order } from "../types/OrderType";
 
 const OrdersContext = createContext<any>(null);
 
 export function OrdersProvider({ children }: any) {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     async function load() {

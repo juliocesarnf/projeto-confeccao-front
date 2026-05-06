@@ -1,9 +1,11 @@
+import type { Order } from "../../../types/OrderType";
+
 type Props = {
-  order: any;
+  order: Order;
 };
 
 function DoneCard({ order }: Props) {
-  const data = new Date(order.deadline);
+  const data = new Date(order.dueDate);
   const hoje = new Date();
 
   const diffTime = data.getTime() - hoje.getTime();
@@ -24,7 +26,7 @@ function DoneCard({ order }: Props) {
       {/* infos */}
       <div className="min-w-0">
         <p className="font-semibold truncate">
-          {order.cliente_nome}
+          {order.customerName}
         </p>
         <p className="text-sm">
           Prazo: {data.toLocaleDateString("pt-BR")}

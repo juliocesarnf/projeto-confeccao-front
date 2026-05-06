@@ -1,150 +1,74 @@
-import { type ReactNode, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-
-import useOrders from "../useOrders";
-import useOrderItems from "../useOrderItems";
+import {
+  type ButtonHTMLAttributes,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
+import { useNavigate } from "react-router-dom";
 import { useProduction } from "../../../context/ProductionContext";
 import type { ProductToDo } from "../../../types/ProductType";
+import OrderService from "../../../services/OrderService";
+import OrderHeader from "../Header/OrderHeader";
+import type { OrderItem } from "../../../types/OrderType";
+
+type ViewMode = "required" | "stock";
 
 function OrderParts(): ReactNode {
-  const { id } = useParams();
   const navigate = useNavigate();
+  const {
+    order,
+    setOrderProducts,
+    setOrderProductsVariations,
+  } = useProduction();
 
-  const { orders, loading, error } = useOrders();
-  const { items, loading: loadingItems } = useOrderItems(id);
-  const { setOrderProductsVariations, setOrderProducts } = useProduction();
+  const [items, setItems] = useState<OrderItem[]>([]);
+  const [view, setView] = useState<ViewMode>("required");
 
-  const [view, setView] = useState<"required" | "stock">("required");
+  useEffect(() => {
+    if (!order) return;
 
-  // =========================
-  // LOADING & ERROR
-  // =========================
-  if (loading || loadingItems) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
+    const loadItems = async () => {
+      const orderItems = await OrderService.getOrderItems(order.id);
+      setItems(orderItems);
+    };
 
-  // =========================
-  // ORDER DATA
-  // =========================
-  const order = orders.find(o => String(o.id) === String(id));
+    loadItems();
+  }, [order]);
 
   if (!order) return <p>Order not found</p>;
 
-  // =========================
-  // DATE / STATUS
-  // =========================
-  const dueDate = new Date(order.prazo);
-  const today = new Date();
-
-  const diffDays = Math.ceil(
-    (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  const statusColor =
-    diffDays <= 1
-      ? "text-red-600"
-      : diffDays <= 3
-      ? "text-yellow-600"
-      : "text-blue-600";
-
-  // =========================
-  // ITEMS LOGIC
-  // =========================
-  const stockItems = items.filter(item => item.quantidade_atendida > 0);
-
+  // Separa as pecas ja atendidas em estoque das que ainda precisam ser produzidas.
+  const stockItems = items.filter((item) => item.fulfilledQuantity > 0);
   const requiredItems = items.filter(
-    item => item.quantidade - item.quantidade_atendida > 0
+    (item) => getMissingQuantity(item) > 0
   );
+  const visibleItems = view === "stock" ? stockItems : requiredItems;
 
-  const visibleItems =
-    view === "stock" ? stockItems : requiredItems;
+  const handleStartProduction = () => {
+    // Agrupa variacoes do mesmo produto para alimentar as proximas etapas.
+    setOrderProducts(groupRequiredProducts(requiredItems));
+    setOrderProductsVariations(
+      requiredItems.map((item) => ({
+        productVariationId: item.variation.id,
+        quantityRequired: getMissingQuantity(item),
+      }))
+    );
 
-  // =========================
-  // ACTIONS
-  // =========================
-  function handleStartProduction() {
-    if(!order){
-      return
-    }
-    const productsToProduce: ProductToDo[] = [];
-
-    requiredItems.forEach(item => {
-      const quantity = item.quantidade - item.quantidade_atendida;
-      const existingProduct = productsToProduce.find(p => p.id_Produto === item.produto.id);
-
-      if (existingProduct) {
-        existingProduct.quantidade += quantity;
-      } else {
-        productsToProduce.push({
-          id_Produto: item.produto.id,
-          nome: item.produto.nome,
-          quantidade: quantity
-        });
-      }
-    });
-
-    setOrderProducts(productsToProduce);
-
-    const productsToProduceVariations = requiredItems.map(item => ({
-      productVariationId: item.variacao.id,
-      quantityRequired: item.quantidade - item.quantidade_atendida
-    }));
-
-    setOrderProductsVariations(productsToProduceVariations);
     navigate(`/orders/${order.id}/materials`);
-  }
+  };
 
-  function getQuantity(item: any) {
-    return view === "stock"
-      ? item.quantidade_atendida
-      : item.quantidade - item.quantidade_atendida;
-  }
-
-  // =========================
-  // RENDER
-  // =========================
   return (
     <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 py-4">
-      
-      {/* BACK */}
       <button
         onClick={() => navigate(-1)}
         className="mb-3 text-sm text-gray-500 hover:text-gray-700"
       >
-        ← Back
+        Back
       </button>
 
-      {/* CARD */}
       <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-4">
+        <OrderHeader title="Peças do Pedido" />
 
-        {/* HEADER */}
-        <header className="flex flex-col gap-3 border-b pb-3">
-          <div>
-            <h1 className="text-xl font-semibold">
-              Order #{order.id}
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Peças Necessárias
-            </p>
-          </div>
-
-          <div className="text-sm text-gray-500 flex flex-wrap gap-4">
-            <span>
-              Due date:{" "}
-              <span className={`font-medium ${statusColor}`}>
-                {dueDate.toLocaleDateString("en-US")}
-              </span>
-            </span>
-
-            <span>
-              Total:{" "}
-              <span className="font-medium text-gray-800">
-                $ {Number(order.valor_total || 0).toFixed(2)}
-              </span>
-            </span>
-          </div>
-        </header>
-
-        {/* TABS */}
         <div className="flex gap-2">
           <TabButton
             active={view === "required"}
@@ -163,51 +87,35 @@ function OrderParts(): ReactNode {
           </TabButton>
         </div>
 
-        {/* LIST */}
         <div className="flex flex-col divide-y">
-          {visibleItems.map(item => (
+          {visibleItems.map((item) => (
             <ItemRow
               key={item.id}
               item={item}
-              quantity={getQuantity(item)}
+              quantity={getVisibleQuantity(item, view)}
               view={view}
             />
           ))}
         </div>
 
-        {/* FOOTER */}
-        {!order ? (
-          <button
-            onClick={() => console.log("Move to shipping")}
-            className="mt-2 w-full py-3 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition"
-          >
-            Move to Shipping
-          </button>
-        ) : (
-          <button
-            onClick={handleStartProduction}
-            className="mt-2 w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
-          >
-            Iniciar Produção
-          </button>
-        )}
+        <button
+          onClick={handleStartProduction}
+          className="mt-2 w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+        >
+          Iniciar Produção
+        </button>
       </div>
     </div>
   );
 }
 
-// =========================
-// AUX COMPONENTS
-// =========================
+type TabButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  active: boolean;
+  color: "blue" | "green";
+};
 
-function TabButton({
-  children,
-  active,
-  color,
-  ...props
-}: any) {
+function TabButton({ children, active, color, ...props }: TabButtonProps) {
   const base = "flex-1 py-2 rounded-md text-sm font-medium transition";
-
   const styles = active
     ? color === "blue"
       ? "bg-blue-600 text-white"
@@ -221,33 +129,68 @@ function TabButton({
   );
 }
 
-function ItemRow({ item, quantity, view }: any) {
+type ItemRowProps = {
+  item: OrderItem;
+  quantity: number;
+  view: ViewMode;
+};
+
+function ItemRow({ item, quantity, view }: ItemRowProps) {
   return (
     <div className="py-3 flex justify-between items-center">
       <div className="flex flex-col">
-        <span className="font-medium">
-          {item.produto.nome}
+        <span className="font-medium">{item.product.name}</span>
+
+        <span className="text-xs text-gray-500">
+          SKU: {item.variation.sku} • {item.variation.size} • {item.variation.color}
         </span>
 
         <span className="text-xs text-gray-500">
-          SKU: {item.variacao.sku} • {item.variacao.tamanho} • {item.variacao.cor}
-        </span>
-
-        <span className="text-xs text-gray-500">
-          $ {Number(item.preco_unitario).toFixed(2)} each
+          $ {Number(item.unitPrice).toFixed(2)} each
         </span>
       </div>
 
       <div
-        className={`px-3 py-1 rounded-md text-sm font-medium
-          ${view === "stock"
+        className={`px-3 py-1 rounded-md text-sm font-medium ${
+          view === "stock"
             ? "bg-green-50 text-green-700"
-            : "bg-blue-50 text-blue-700"}`}
+            : "bg-blue-50 text-blue-700"
+        }`}
       >
         x{quantity}
       </div>
     </div>
   );
+}
+
+function getMissingQuantity(item: OrderItem) {
+  return item.quantity - item.fulfilledQuantity;
+}
+
+function getVisibleQuantity(item: OrderItem, view: ViewMode) {
+  return view === "stock" ? item.fulfilledQuantity : getMissingQuantity(item);
+}
+
+function groupRequiredProducts(requiredItems: OrderItem[]): ProductToDo[] {
+  return requiredItems.reduce<ProductToDo[]>((products, item) => {
+    const quantity = getMissingQuantity(item);
+    const existingProduct = products.find(
+      (product) => product.productId === item.product.id
+    );
+
+    if (existingProduct) {
+      existingProduct.quantity += quantity;
+      return products;
+    }
+
+    products.push({
+      productId: item.product.id,
+      name: item.product.name,
+      quantity,
+    });
+
+    return products;
+  }, []);
 }
 
 export default OrderParts;
