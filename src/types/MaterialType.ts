@@ -11,6 +11,7 @@ export type Material = {
 };
 
 export type MaterialVariationInfo = {
+  materialId: number | null;
   variationId: number;
   material: string;
   variation: string;
@@ -31,4 +32,16 @@ export type ProductMaterialResponse = {
   productId: number;
   productVariationId: number;
   materials: ProductMaterial[];
+};
+
+export type RequiredMaterialSupplier = {
+  supplierId: number;
+  supplierName: string;
+  price: number;
+};
+
+export type RequiredMaterialSuppliers = {
+  materialId: number | null;
+  materialName: string;
+  suppliers: RequiredMaterialSupplier[];
 };

@@ -16,7 +16,7 @@ export type ProductToDo = {
 export type OrderTeamAssignment = {
   productId: number;
   processId: number;
-  employeeId: number | null;
+  workerId: number | null;
 };
 
 export type RequiredProduct = {

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { Order } from "../../../types/OrderType";
+import { useProduction } from "../../../context/ProductionContext";
 
 type Props = {
   order: Order;
@@ -7,6 +8,7 @@ type Props = {
 
 function ProductionCard({ order }: Props) {
   const navigate = useNavigate();
+  const { setOrder } = useProduction();
 
   const data = new Date(order.dueDate);
   const hoje = new Date();
@@ -24,7 +26,10 @@ function ProductionCard({ order }: Props) {
 
   return (
     <div
-      onClick={() => navigate(`/orders/${order.id}`)}
+      onClick={() => { 
+        setOrder(order)
+        navigate(`/orders/${order.id}/producao`)
+      }}
       className={`relative px-2 py-1 border rounded-md cursor-pointer active:scale-95 transition ${bgColor} flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 w-full`}
     >
       <div className="min-w-0 w-full">
@@ -32,7 +37,7 @@ function ProductionCard({ order }: Props) {
         <p className="text-sm">
           Prazo: {data.toLocaleDateString("pt-BR")}
         </p>
-        <p className="text-sm break-all">Pedido: {order.id}</p>
+        <p className="text-sm break-all">Pedido: {order.id.toString().padStart(6, '0')}</p>
       </div>
     </div>
   );

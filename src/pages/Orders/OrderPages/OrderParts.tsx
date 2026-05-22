@@ -9,43 +9,88 @@ import { useProduction } from "../../../context/ProductionContext";
 import type { ProductToDo } from "../../../types/ProductType";
 import OrderService from "../../../services/OrderService";
 import OrderHeader from "../Header/OrderHeader";
+import Loading from "../../../components/Loading";
 import type { OrderItem } from "../../../types/OrderType";
+import { toast } from "react-toastify";
 
 type ViewMode = "required" | "stock";
+
+// Agrupa itens por produto, retornando um produto com suas variações
+type GroupedProduct = {
+  productId: number;
+  productName: string;
+  variations: {
+    item: OrderItem;
+    quantity: number;
+  }[];
+  totalQuantity: number;
+};
+
+function groupByProduct(items: OrderItem[], view: ViewMode): GroupedProduct[] {
+  const map = new Map<number, GroupedProduct>();
+
+  for (const item of items) {
+    const quantity = getVisibleQuantity(item, view);
+    const existing = map.get(item.product.id);
+
+    if (existing) {
+      existing.variations.push({ item, quantity });
+      existing.totalQuantity += quantity;
+    } else {
+      map.set(item.product.id, {
+        productId: item.product.id,
+        productName: item.product.name,
+        variations: [{ item, quantity }],
+        totalQuantity: quantity,
+      });
+    }
+  }
+
+  return Array.from(map.values());
+}
 
 function OrderParts(): ReactNode {
   const navigate = useNavigate();
   const {
     order,
+    orderItems,
+    setOrderItems,
     setOrderProducts,
     setOrderProductsVariations,
   } = useProduction();
 
-  const [items, setItems] = useState<OrderItem[]>([]);
   const [view, setView] = useState<ViewMode>("required");
+  const [loadingTable, setLoadingTable] = useState(true);
+  const [confirmingOrder, setConfirmingOrder] = useState(false);
 
   useEffect(() => {
-    if (!order) return;
+    if (!order) {
+      setOrderItems([]);
+      setLoadingTable(false);
+      return;
+    }
 
     const loadItems = async () => {
-      const orderItems = await OrderService.getOrderItems(order.id);
-      setItems(orderItems);
+      const items = await OrderService.getOrderItems(order.id);
+      setOrderItems(items);
+      setLoadingTable(false);
     };
 
     loadItems();
-  }, [order]);
+  }, [order, setOrderItems]);
 
   if (!order) return <p>Order not found</p>;
 
-  // Separa as pecas ja atendidas em estoque das que ainda precisam ser produzidas.
-  const stockItems = items.filter((item) => item.fulfilledQuantity > 0);
-  const requiredItems = items.filter(
+  const stockItems = orderItems.filter((item) => item.fulfilledQuantity > 0);
+  const requiredItems = orderItems.filter(
     (item) => getMissingQuantity(item) > 0
   );
   const visibleItems = view === "stock" ? stockItems : requiredItems;
 
+  const groupedProducts = groupByProduct(visibleItems, view);
+
   const handleStartProduction = () => {
-    // Agrupa variacoes do mesmo produto para alimentar as proximas etapas.
+    setOrderItems(requiredItems);
     setOrderProducts(groupRequiredProducts(requiredItems));
     setOrderProductsVariations(
       requiredItems.map((item) => ({
@@ -53,17 +98,61 @@ function OrderParts(): ReactNode {
         quantityRequired: getMissingQuantity(item),
       }))
     );
-
     navigate(`/orders/${order.id}/materials`);
   };
 
+  const handleConfirmOrder = async () => {
+    setConfirmingOrder(true);
+
+    try {
+      const response = await OrderService.confirmOrder(order.id);
+
+      navigate("/orders", {
+        state: {
+          notification: {
+            type: "success",
+            message: response.message,
+            status: response.status,
+          },
+          selectedStatus: "confirmado",
+        },
+      });
+    } catch (error: any) {
+      const status = error.response?.status;
+      const msg =
+        error.response?.data?.message ??
+        "Erro inesperado ao confirmar pedido.";
+
+      toast.error(status ? `Erro ${status}: ${msg}` : msg, {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    } finally {
+      setConfirmingOrder(false);
+    }
+  };
+
+  const actionButton = order.enoughItems
+    ? {
+        label: confirmingOrder ? "Confirmando..." : "Confirmar Pedido",
+        onClick: handleConfirmOrder,
+        className:
+          "mt-2 w-full py-3 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition disabled:cursor-not-allowed disabled:bg-green-300",
+      }
+    : {
+        label: "Iniciar Produção",
+        onClick: handleStartProduction,
+        className:
+          "mt-2 w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:bg-blue-300",
+      };
+
   return (
-    <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 py-4">
+    <div className="w-full max-w-4xl mx-auto px-1 sm:px-4 py-4">
       <button
         onClick={() => navigate(-1)}
         className="mb-3 text-sm text-gray-500 hover:text-gray-700"
       >
-        Back
+        ← Back
       </button>
 
       <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-4">
@@ -87,22 +176,30 @@ function OrderParts(): ReactNode {
           </TabButton>
         </div>
 
-        <div className="flex flex-col divide-y">
-          {visibleItems.map((item) => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              quantity={getVisibleQuantity(item, view)}
-              view={view}
-            />
-          ))}
+        <div className="flex flex-col">
+          {loadingTable ? (
+            <div className="flex justify-center items-center py-10">
+              <Loading />
+            </div>
+          ) : groupedProducts.length === 0 ? (
+            <div className="p-6 text-center text-sm text-gray-500">
+              Nenhum item encontrado.
+            </div>
+          ) : (
+            <div className="flex flex-col divide-y">
+              {groupedProducts.map((group) => (
+                <ProductGroup key={group.productId} group={group} view={view} />
+              ))}
+            </div>
+          )}
         </div>
 
         <button
-          onClick={handleStartProduction}
-          className="mt-2 w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+          onClick={actionButton.onClick}
+          disabled={loadingTable || confirmingOrder}
+          className={actionButton.className}
         >
-          Iniciar Produção
+          {actionButton.label}
         </button>
       </div>
     </div>
@@ -129,35 +226,56 @@ function TabButton({ children, active, color, ...props }: TabButtonProps) {
   );
 }
 
-type ItemRowProps = {
-  item: OrderItem;
-  quantity: number;
+type ProductGroupProps = {
+  group: GroupedProduct;
   view: ViewMode;
 };
 
-function ItemRow({ item, quantity, view }: ItemRowProps) {
+function ProductGroup({ group, view }: ProductGroupProps) {
+  const accentClass =
+    view === "stock"
+      ? "bg-green-50 text-green-700"
+      : "bg-blue-50 text-blue-700";
+
+  const totalBadgeClass =
+    view === "stock"
+      ? "bg-green-100 text-green-800 border border-green-200"
+      : "bg-blue-100 text-blue-800 border border-blue-200";
+
   return (
-    <div className="py-3 flex justify-between items-center">
-      <div className="flex flex-col">
-        <span className="font-medium">{item.product.name}</span>
-
-        <span className="text-xs text-gray-500">
-          SKU: {item.variation.sku} • {item.variation.size} • {item.variation.color}
+    <div className="py-3 flex flex-col gap-2">
+      <div className="flex justify-between items-center">
+        <span className="font-semibold text-gray-800">
+          {group.productName}
         </span>
-
-        <span className="text-xs text-gray-500">
-          $ {Number(item.unitPrice).toFixed(2)} each
+        <span
+          className={`px-3 py-1 rounded-md text-sm font-semibold ${totalBadgeClass}`}
+        >
+          x{group.totalQuantity}
         </span>
       </div>
 
-      <div
-        className={`px-3 py-1 rounded-md text-sm font-medium ${
-          view === "stock"
-            ? "bg-green-50 text-green-700"
-            : "bg-blue-50 text-blue-700"
-        }`}
-      >
-        x{quantity}
+      <div className="flex flex-col gap-1 pl-3 border-l-2 border-gray-100">
+        {group.variations.map(({ item, quantity }) => (
+          <div
+            key={item.id}
+            className="flex justify-between items-center"
+          >
+            <div className="flex flex-col">
+              <span className="text-sm text-gray-600">
+                {item.variation.size} · {item.variation.color}
+              </span>
+              <span className="text-xs text-gray-400">
+                SKU: {item.variation.sku} · R$ {Number(item.unitPrice).toFixed(2)}
+              </span>
+            </div>
+            <span
+              className={`px-2 py-0.5 rounded text-sm font-medium ${accentClass}`}
+            >
+              x{quantity}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

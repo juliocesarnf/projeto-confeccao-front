@@ -33,7 +33,7 @@ function NewCard({ order }: Props) {
       }}
       className={`relative px-2 py-1 border rounded-md cursor-pointer active:scale-95 transition ${bgColor} flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 w-full`}
     >
-      {order.status === 'teste' && (
+      {order.enoughItems && (
         <Check className="absolute top-2 right-2 w-7 h-7 text-green-600" />
       )}
 
@@ -42,7 +42,7 @@ function NewCard({ order }: Props) {
         <p className="text-sm">
           Prazo: {date.toLocaleDateString("pt-BR")}
         </p>
-        <p className="text-sm break-all">Pedido: {order.id}</p>
+        <p className="text-sm break-all">Pedido: {order.id.toString().padStart(6, '0')}</p>
       </div>
     </div>
   );

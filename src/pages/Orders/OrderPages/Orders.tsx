@@ -1,87 +1,129 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
 import NewCard from "../Cards/NewCard";
 import DoneCard from "../Cards/DoneCard";
 import ProductionCard from "../Cards/ProductionCard";
 import OrdersService from "../../../services/OrderService";
 import type { Order } from "../../../types/OrderType";
 
-type OrderStatus = "novo" | "em_producao" | "confirmado";
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type OrderStatus = "novo" | "producao" | "confirmado";
+
+type OrdersLocationState = {
+  notification?: {
+    type: "success" | "error";
+    message: string;
+    status?: number;
+  };
+  selectedStatus?: OrderStatus;
+};
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const TAB_CLASSES = {
+  base: "px-2 py-2 flex-1 text-center rounded-md border transition-all duration-200 font-medium text-sm sm:text-base",
+  active: "bg-blue-600 text-white border-blue-600 shadow-sm",
+  inactive: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
+};
+
+const TABS: { label: string; value: OrderStatus }[] = [
+  { label: "Novos", value: "novo" },
+  { label: "Produção", value: "producao" },
+  { label: "Prontos", value: "confirmado" },
+];
+
+const CARD_MAP: Record<OrderStatus, React.ComponentType<{ order: Order }>> = {
+  novo: NewCard,
+  producao: ProductionCard,
+  confirmado: DoneCard,
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 function Orders(): ReactNode {
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders]   = useState<Order[]>([]);
+  const [status, setStatus]   = useState<OrderStatus>("novo");
+  const [loading, setLoading] = useState(true);
+
+  // Dispara o toast correspondente e limpa o state da navegação.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const notified = useRef(false);
 
   useEffect(() => {
+    if (notified.current) return;
+    notified.current = true;
+
+    const state = location.state as OrdersLocationState | null;
+
+    if (state?.notification) {
+      toast[state.notification.type](state.notification.message, {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    }
+
+    if (state?.selectedStatus) {
+      setStatus(state.selectedStatus);
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, []);
+
+  // Busca os pedidos no servidor.
+  useEffect(() => {
     const fetchOrders = async () => {
-      const orders = await OrdersService.listAll();
-      setOrders(orders);
+      try {
+        setLoading(true);
+        const data = await OrdersService.getAllOrders();
+        setOrders(data);
+      } catch {
+        // Erro já notificado pelo interceptor da API.
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchOrders();
   }, []);
 
-  const [status, setStatus] = useState<OrderStatus>("novo");
-
-  const baseClasses =
-    "px-2 py-2 flex-1 text-center rounded-md border transition-all duration-200 font-medium text-sm sm:text-base";
-
-  const activeClasses =
-    "bg-blue-600 text-white border-blue-600 shadow-sm";
-
-  const inactiveClasses =
-    "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100";
-
-  const filteredOrders = orders.filter(
-    (order) => order.status === status
-  );
+  const filteredOrders = orders.filter((order) => order.status === status);
+  const CardComponent  = CARD_MAP[status];
 
   return (
     <div className="w-full max-w-6xl flex flex-col gap-4 px-0 sm:px-4">
-      
-      {/* BOTÕES */}
+
+      {/* Abas de filtro por status */}
       <div className="flex justify-center items-center gap-2 w-full">
-        <button
-          onClick={() => setStatus("novo")}
-          className={`${baseClasses} ${
-            status === "novo" ? activeClasses : inactiveClasses
-          }`}
-        >
-          Novos
-        </button>
-
-        <button
-          onClick={() => setStatus("em_producao")}
-          className={`${baseClasses} ${
-            status === "em_producao" ? activeClasses : inactiveClasses
-          }`}
-        >
-          Produção
-        </button>
-
-        <button
-          onClick={() => setStatus("confirmado")}
-          className={`${baseClasses} ${
-            status === "confirmado" ? activeClasses : inactiveClasses
-          }`}
-        >
-          Prontos
-        </button>
+        {TABS.map(({ label, value }) => (
+          <button
+            key={value}
+            onClick={() => setStatus(value)}
+            className={`${TAB_CLASSES.base} ${status === value ? TAB_CLASSES.active : TAB_CLASSES.inactive}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* LISTA */}
-      <div className="flex flex-col gap-4">
-        {filteredOrders.map((order) => {
-          if (status === "novo") {
-            return <NewCard key={order.id} order={order} />;
-          }
+      {/* Loading ou lista de pedidos filtrados */}
+      {loading ? (
+        <div className="fixed inset-0 md:left-64 bottom-16 md:bottom-0 flex justify-center items-center bg-white/60 backdrop-blur-sm z-50">
+          <div className="w-10 h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {filteredOrders.map((order) => (
+            <CardComponent key={order.id} order={order} />
+          ))}
+        </div>
+      )}
 
-          if (status === "confirmado") {
-            return <DoneCard key={order.id} order={order} />;
-          }
-
-          return <ProductionCard key={order.id} order={order} />;
-        })}
-      </div>
     </div>
   );
 }

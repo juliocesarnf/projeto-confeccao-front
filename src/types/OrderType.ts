@@ -7,6 +7,7 @@ export type Order = {
   customerName: string;
   totalItems: string;
   totalQuantity: string;
+  enoughItems: boolean;
 };
 
 export type OrderItem = {

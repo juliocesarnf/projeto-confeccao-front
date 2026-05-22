@@ -1,15 +1,20 @@
-import { BrowserRouter } from 'react-router-dom'
-import RoutesApp from './routes/Routes'
-import { OrdersProvider } from './context/OrdersContext'
+import { BrowserRouter } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+
+import { ProductionProvider } from "./context/ProductionContext";
+import RoutesApp from "./routes/Routes";
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 function App() {
-  return(
+  return (
     <BrowserRouter>
-      <OrdersProvider>
+      <ProductionProvider>
+        <ToastContainer />
         <RoutesApp />
-      </OrdersProvider>
+      </ProductionProvider>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

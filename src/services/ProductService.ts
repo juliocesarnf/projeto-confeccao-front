@@ -1,5 +1,5 @@
 import type { ProductMaterial } from "../types/MaterialType";
-import type { ProductProcess, ProductToDo } from "../types/ProductType";
+import type { ProductToDo } from "../types/ProductType";
 import API from "./API";
 
 const ProductService = {

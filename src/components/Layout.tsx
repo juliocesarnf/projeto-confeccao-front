@@ -1,5 +1,7 @@
-import { Sidebar } from "./Sidebar"
-import { BottomNav } from "./BottomNav"
+import { Sidebar } from "./Sidebar";
+import { BottomNav } from "./BottomNav";
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,5 +14,5 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <BottomNav />
     </div>
-  )
+  );
 }

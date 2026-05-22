@@ -1,17 +1,6 @@
 import { useEffect, useState } from "react";
 import ProductsService from "../../services/ProductService";
-
-export interface ProductMaterial {
-  id: number;
-  produto_id: number;
-  material_id: number;
-  quantidade: number;
-
-  material?: {
-    id: number;
-    nome: string;
-  };
-}
+import type { ProductMaterial } from "../../types/MaterialType";
 
 function useProductMaterial(productId?: string) {
   const [productMaterial, setProductMaterial] = useState<ProductMaterial[]>([]);
@@ -25,16 +14,11 @@ function useProductMaterial(productId?: string) {
       try {
         setLoading(true);
 
-        const response = await ProductsService.getProductMaterialsById(Number(productId));
+        const data = await ProductsService.getProductMaterialsById(Number(productId));
 
-        // garante array
-        const data = Array.isArray(response)
-          ? response
-          : response?.data;
+        setProductMaterial(data);
 
-        setProductMaterial(data || []);
-
-      } catch (e) {
+      } catch {
         setError("Erro ao carregar materiais do produto");
       } finally {
         setLoading(false);

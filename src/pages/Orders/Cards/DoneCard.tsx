@@ -32,7 +32,7 @@ function DoneCard({ order }: Props) {
           Prazo: {data.toLocaleDateString("pt-BR")}
         </p>
         <p className="text-sm">
-          Pedido: {order.id}
+          Pedido: {order.id.toString().padStart(6, '0')}
         </p>
       </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import MaterialsService from "../../services/MaterialsService";
+import MaterialsService from "../../services/MaterialService";
 
 function useMaterials() {
   const [materials, setMaterials] = useState<any[]>([]);
