@@ -1,5 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductService from "../../../services/ProductService";
 import { useProduction } from "../../../context/ProductionContext";
@@ -9,104 +8,16 @@ import WorkerService from "../../../services/WorkerService";
 import OrderHeader from "../Header/OrderHeader";
 import Loading from "../../../components/Loading";
 
-function WorkerDropdown({
-  workers,
-  selected,
-  onToggle,
-  anchorRef,
-  onClose,
-}: {
-  workers: Worker[];
-  selected: number[];
-  onToggle: (workerId: number) => void;
-  anchorRef: React.RefObject<HTMLButtonElement>;
-  onClose: () => void;
-}) {
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [style, setStyle] = useState<React.CSSProperties>({});
-
-  useEffect(() => {
-    if (!anchorRef.current) return;
-    const rect = anchorRef.current.getBoundingClientRect();
-    setStyle({
-      position: "fixed",
-      top: rect.bottom + 4,
-      left: rect.left,
-      zIndex: 9999,
-      minWidth: 200,
-    });
-  }, [anchorRef]);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        anchorRef.current &&
-        !anchorRef.current.contains(e.target as Node)
-      ) {
-        onClose();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose, anchorRef]);
-
-  return createPortal(
-    <div
-      ref={dropdownRef}
-      style={style}
-      className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto"
-    >
-      {workers.length === 0 ? (
-        <p className="px-4 py-3 text-xs text-gray-400">
-          Nenhum funcionário cadastrado
-        </p>
-      ) : (
-        workers.map((worker) => {
-          const checked = selected.includes(worker.id);
-          return (
-            <label
-              key={worker.id}
-              className="flex items-center gap-2.5 px-4 py-2.5 cursor-pointer hover:bg-gray-50 text-sm text-gray-700"
-            >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => onToggle(worker.id)}
-                className="accent-blue-600 w-3.5 h-3.5"
-              />
-              {worker.name}
-            </label>
-          );
-        })
-      )}
-    </div>,
-    document.body
-  );
-}
-
 function OrderTeam() {
   const navigate = useNavigate();
-  const {
-    order,
-    orderProducts,
-    setOrderTeamAssignments,
-    setOrderProducts,
-  } = useProduction();
+  const { order, orderProducts, setOrderTeamAssignments, setOrderProducts } = useProduction();
 
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [productsWithProcesses, setProductsWithProcesses] = useState<ProductToDo[]>([]);
   const [assignments, setAssignments] = useState<AssignmentMap>({});
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [teamNotification, setTeamNotification] = useState<{
-    type: "error" | "success";
-    message: string;
-  } | null>(null);
-  const [loadingWorkers, setLoadingWorkers] = useState(true);   // <-- loading workers
-  const [loadingProcesses, setLoadingProcesses] = useState(true); // <-- loading processos
-
-  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [loadingWorkers, setLoadingWorkers] = useState(true);
+  const [loadingProcesses, setLoadingProcesses] = useState(true);
 
   useEffect(() => {
     async function loadWorkers() {
@@ -146,11 +57,7 @@ function OrderTeam() {
       const updated = current.includes(workerId)
         ? current.filter((id) => id !== workerId)
         : [...current, workerId];
-
-      return {
-        ...prev,
-        [productId]: { ...product, [processId]: updated },
-      };
+      return { ...prev, [productId]: { ...product, [processId]: updated } };
     });
   }
 
@@ -158,20 +65,20 @@ function OrderTeam() {
     return assignments[productId]?.[processId] ?? [];
   }
 
+  function isMissingWorker(productId: number, processId: number): boolean {
+    return submitted && getSelected(productId, processId).length === 0;
+  }
+
   function handleConfirmTeam() {
-    const missingProcesses = productsWithProcesses.flatMap((product) =>
-      (product.processes ?? [])
-        .filter((process) => getSelected(product.productId, process.processId).length === 0)
-        .map((process) => `${product.name}: ${process.name}`)
+    setSubmitted(true);
+
+    const hasMissing = productsWithProcesses.some((product) =>
+      (product.processes ?? []).some(
+        (process) => getSelected(product.productId, process.processId).length === 0
+      )
     );
 
-    if (missingProcesses.length > 0) {
-      setTeamNotification({
-        type: "error",
-        message: `Selecione pelo menos um funcionario para: ${missingProcesses.join(", ")}.`,
-      });
-      return;
-    }
+    if (hasMissing) return;
 
     setOrderTeamAssignments(
       productsWithProcesses.flatMap((product) =>
@@ -189,12 +96,7 @@ function OrderTeam() {
     navigate(`/orders/${order.id}/confirm`);
   }
 
-  const dropdownKey = (productId: number, processId: number) =>
-    `${productId}-${processId}`;
-
-  const handleClose = useCallback(() => setOpenDropdown(null), []);
-
-  const isLoading = loadingWorkers || loadingProcesses; // <-- combinado
+  const isLoading = loadingWorkers || loadingProcesses;
 
   if (!order) return <p className="p-4 text-gray-500">Pedido não encontrado</p>;
 
@@ -207,93 +109,117 @@ function OrderTeam() {
         ← Back
       </button>
 
-      <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-6">
+      <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-5">
         <OrderHeader title="Selecionar Equipe" />
 
-        {/* CONTEÚDO COM LOADING */}
         {isLoading ? (
           <div className="flex justify-center items-center py-10">
             <Loading />
           </div>
         ) : (
-          <>
+          <div className="flex flex-col gap-6">
             {productsWithProcesses.map((product) => (
-              <div key={product.productId} className="flex flex-col gap-2">
-                <h3 className="text-sm font-semibold text-gray-700">
-                  {product.name}
-                </h3>
+              <div key={product.productId} className="flex flex-col gap-3">
+                {/* Product title */}
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-5 rounded-full bg-blue-500 shrink-0" />
+                  <h3 className="text-sm font-bold text-gray-800">{product.name}</h3>
+                  <span className="text-xs text-gray-400 font-normal">
+                    × {product.quantity}
+                  </span>
+                </div>
 
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
-                      <tr>
-                        <th className="px-4 py-3 text-left font-medium">Processo</th>
-                        <th className="px-4 py-3 text-left font-medium">Selecionar</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {product.processes?.map((process) => {
-                        const key = dropdownKey(product.productId, process.processId);
-                        const selected = getSelected(product.productId, process.processId);
-                        const isOpen = openDropdown === key;
-                        const anchorRef = {
-                          current: buttonRefs.current[key] ?? null,
-                        } as React.RefObject<HTMLButtonElement>;
+                {/* Processes */}
+                <div className="flex flex-col gap-2 pl-3 border-l-2 border-gray-100">
+                  {(product.processes ?? []).map((process) => {
+                    const selected = getSelected(product.productId, process.processId);
+                    const missing = isMissingWorker(product.productId, process.processId);
 
-                        return (
-                          <tr key={process.processId} className="bg-white hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-3 text-gray-700 font-medium">
-                              {process.name}
-                            </td>
-                            <td className="px-4 py-3">
-                              <button
-                                ref={(el) => { buttonRefs.current[key] = el; }}
-                                onClick={() => setOpenDropdown(isOpen ? null : key)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                              >
-                                Responsáveis ({selected.length})
-                                <span className={`transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}>
-                                  ▾
-                                </span>
-                              </button>
+                    return (
+                      <div
+                        key={process.processId}
+                        className={`rounded-xl border p-3 flex flex-col gap-2.5 transition-colors ${
+                          missing
+                            ? "border-red-200 bg-red-50"
+                            : selected.length > 0
+                            ? "border-blue-100 bg-blue-50/40"
+                            : "border-gray-200 bg-gray-50"
+                        }`}
+                      >
+                        {/* Process header */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-gray-700">
+                            {process.name}
+                          </span>
+                          {missing ? (
+                            <span className="text-[10px] font-semibold text-red-500 bg-red-100 px-2 py-0.5 rounded-full">
+                              Obrigatório
+                            </span>
+                          ) : selected.length > 0 ? (
+                            <span className="text-[10px] font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                              {selected.length} selecionado{selected.length > 1 ? "s" : ""}
+                            </span>
+                          ) : null}
+                        </div>
 
-                              {isOpen && (
-                                <WorkerDropdown
-                                  workers={workers}
-                                  selected={selected}
-                                  onToggle={(workerId) =>
-                                    toggleWorker(product.productId, process.processId, workerId)
-                                  }
-                                  anchorRef={anchorRef}
-                                  onClose={handleClose}
-                                />
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        {/* Worker chips */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {workers.length === 0 ? (
+                            <p className="text-xs text-gray-400 italic">
+                              Nenhum funcionário cadastrado
+                            </p>
+                          ) : (
+                            workers
+                              .filter((w) => w.active)
+                              .map((worker) => {
+                                const isSelected = selected.includes(worker.id);
+                                return (
+                                  <button
+                                    key={worker.id}
+                                    type="button"
+                                    onClick={() =>
+                                      toggleWorker(product.productId, process.processId, worker.id)
+                                    }
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                                      isSelected
+                                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                                        : "bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600"
+                                    }`}
+                                  >
+                                    {worker.name}
+                                  </button>
+                                );
+                              })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
 
-            {teamNotification && (
-              <p
-                className={`text-sm ${
-                  teamNotification.type === "error" ? "text-red-600" : "text-green-600"
-                }`}
-              >
-                {teamNotification.message}
-              </p>
+            {submitted && (
+              (() => {
+                const totalMissing = productsWithProcesses.reduce((acc, product) =>
+                  acc + (product.processes ?? []).filter(
+                    (p) => getSelected(product.productId, p.processId).length === 0
+                  ).length, 0
+                );
+                return totalMissing > 0 ? (
+                  <p className="text-xs text-red-500 text-center">
+                    Selecione pelo menos um funcionário para cada processo destacado em vermelho.
+                  </p>
+                ) : null;
+              })()
             )}
-          </>
+          </div>
         )}
 
         <button
           onClick={handleConfirmTeam}
           disabled={isLoading}
-          className="mt-2 w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:bg-blue-300"
+          className="mt-2 w-full py-3 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:bg-blue-300"
         >
           Confirmar Equipe
         </button>

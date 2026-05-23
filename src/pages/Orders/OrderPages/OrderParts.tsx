@@ -266,7 +266,7 @@ function ProductGroup({ group, view }: ProductGroupProps) {
                 {item.variation.size} · {item.variation.color}
               </span>
               <span className="text-xs text-gray-400">
-                SKU: {item.variation.sku} · R$ {Number(item.unitPrice).toFixed(2)}
+                {item.variation.sku}
               </span>
             </div>
             <span

@@ -45,7 +45,12 @@ const MaterialsService = {
   },
 
   async purchaseMaterials(materials: MaterialVariationInfo[]): Promise<any> {
-
+    const payload = materials.map((material) => ({
+      materialVariationId: material.variationId,
+      quantity: material.quantity,
+    }));
+    const response = await API.post("/materiais/compra", payload);
+    return response;
   }
 };
 
