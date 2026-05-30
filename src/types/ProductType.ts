@@ -3,7 +3,7 @@ export type ProductProcess = {
   name: string;
   processId: number;
   stepOrder: number;
-  estimatedTime: string;
+  dificultyLevel: number;
 };
 
 export type ProductToDo = {
@@ -11,6 +11,11 @@ export type ProductToDo = {
   name: string;
   quantity: number;
   processes?: ProductProcess[];
+};
+
+export type ProductProcessesResult = {
+  productId: number;
+  processes: ProductProcess[];
 };
 
 export type OrderTeamAssignment = {

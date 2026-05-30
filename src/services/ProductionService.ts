@@ -1,6 +1,7 @@
 import type {
   StartProductionPayload,
   StartProductionResponse,
+  ProductionDetailView,
 } from "../types/ProductionType"
 import type { OrderItem } from "../types/OrderType";
 import type { ProductToDo, OrderTeamAssignment } from "../types/ProductType";
@@ -86,13 +87,16 @@ const ProductionService = {
         "Produção iniciada com sucesso.",
     };
   },
-  async searchProductionByOrderId(id: number): Promise<any> {
+  async searchProductionByOrderId(id: number): Promise<ProductionDetailView> {
     const response = await API.get(`/producao/search/${id}`);
-    console.log(response.data);
     return response.data;
   },
   async fulfillItems(orderId: number, itemIds: number[]): Promise<void> {
     await API.patch(`/producao/${orderId}/items/fulfill`, { itemIds });
+  },
+
+  async updateBatchStatus(batchId: number, completed: boolean): Promise<void> {
+    await API.patch(`/producao/batch/${batchId}/status`, { completed });
   },
 
 };

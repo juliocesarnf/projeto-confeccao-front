@@ -1,5 +1,5 @@
 import type { ProductMaterial } from "../types/MaterialType";
-import type { ProductToDo } from "../types/ProductType";
+import type { ProductToDo, ProductProcessesResult } from "../types/ProductType";
 import API from "./API";
 
 const ProductService = {
@@ -15,9 +15,13 @@ const ProductService = {
     return response.data
   },
   async getProcessesByProductList(products: ProductToDo[]): Promise<ProductToDo[]> {
-    const response = await API.post(`/produtos/processos/search`, { products });
-    return response.data
-     
+    const productIds = products.map((p) => p.productId);
+    const response = await API.post<ProductProcessesResult[]>(
+      "/produtos/processos/search",
+      { productIds }
+    );
+    const processMap = new Map(response.data.map((r) => [r.productId, r.processes]));
+    return products.map((p) => ({ ...p, processes: processMap.get(p.productId) ?? [] }));
   }
 };
 

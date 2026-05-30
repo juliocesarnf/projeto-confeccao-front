@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProduction } from "../../../context/ProductionContext";
 import MaterialsService from "../../../services/MaterialService";
@@ -122,7 +123,7 @@ function OrderSelectMaterials() {
         onClick={() => navigate(-1)}
         className="mb-3 text-sm text-gray-500 hover:text-gray-700"
       >
-        ← Back
+        <ArrowLeft size={20} />
       </button>
 
       <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-4">

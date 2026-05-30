@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProductService from "../../../services/ProductService";
 import { useProduction } from "../../../context/ProductionContext";
@@ -106,7 +107,7 @@ function OrderTeam() {
         onClick={() => navigate(-1)}
         className="mb-3 text-sm text-gray-500 hover:text-gray-700"
       >
-        ← Back
+        <ArrowLeft size={20} />
       </button>
 
       <div className="bg-white border rounded-xl shadow-sm p-4 flex flex-col gap-5">

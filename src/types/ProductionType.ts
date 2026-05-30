@@ -25,6 +25,26 @@ export type StartProductionResponse = {
   message: string;
 };
 
+export interface WorkerView {
+  workerId: number;
+  workerName: string;
+  role: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  producedQuantity: number;
+}
+
+export interface BatchView {
+  batchId: number;
+  processId: number;
+  processName: string;
+  stepOrder: number;
+  completed: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  workers: WorkerView[];
+}
+
 export interface OrderItemView {
   orderItemId: number;
   productVariationId: number;
@@ -33,6 +53,7 @@ export interface OrderItemView {
   quantity: number;
   fulfilledQuantity: number;
   status: "pendente" | "parcial" | "atendido";
+  batches: BatchView[];
 }
 
 export interface ProductionDetailView {

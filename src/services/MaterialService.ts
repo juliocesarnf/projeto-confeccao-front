@@ -17,11 +17,8 @@ const MaterialsService = {
 
   async createKit(materials: MaterialVariationInfo[]): Promise<unknown> {
     const payload = materials.map((material) => ({
-      variacao_id: material.variationId,
-      material: material.material,
-      variacao: material.variation,
-      quantidade: material.quantity,
-      unidade_base: material.baseUnit,
+      materialVariationId: material.variationId,
+      quantity: material.quantity,
     }));
 
     const response = await API.post("/materiais/variacoes/remover-estoque", payload);
@@ -33,11 +30,6 @@ const MaterialsService = {
   ): Promise<RequiredMaterialSuppliers[]> {
     const payload = materials.map((material) => ({
       materialId: material.materialId,
-      variationId: material.variationId,
-      material: material.material,
-      variation: material.variation,
-      quantity: material.quantity,
-      baseUnit: material.baseUnit,
     }));
 
     const response = await API.post<RequiredMaterialSuppliers[]>("/materiais/fornecedores", payload);
