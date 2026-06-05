@@ -1,6 +1,8 @@
-import type { 
-  MaterialVariationInfo, 
-  RequiredMaterialSuppliers 
+import type {
+  Material,
+  MaterialVariation,
+  MaterialVariationInfo,
+  RequiredMaterialSuppliers
 } from "../types/MaterialType";
 import API from "./API";
 
@@ -9,6 +11,26 @@ export type MaterialVariationListResponse =
   | { materiais: MaterialVariationInfo[] };
 
 const MaterialsService = {
+  async listAll(): Promise<Material[]> {
+    const response = await API.get<Material[]>("/materiais");
+    return response.data;
+  },
+
+  async createMaterial(data: { name: string; baseUnit: string; quantityPerPackage?: number }): Promise<Material> {
+    const response = await API.post<Material>("/materiais", data);
+    return response.data;
+  },
+
+  async getVariationsByMaterialId(id: number): Promise<MaterialVariation[]> {
+    const response = await API.get<MaterialVariation[]>(`/materiais/${id}/variacoes`);
+    return response.data;
+  },
+
+  async updateVariation(id: number, data: { variation: string; stock: number }): Promise<MaterialVariation> {
+    const response = await API.put<MaterialVariation>(`/materiais/variacoes/${id}`, data);
+    return response.data;
+  },
+
   async listAllVariations(): Promise<MaterialVariationListResponse> {
     const response = await API.get("/materiais/variacoes");
     console.log(response);

@@ -37,7 +37,7 @@ CREATE TABLE product_variation (
   sku VARCHAR(100),
   size VARCHAR(50),
   color VARCHAR(50),
-  stock NUMERIC(10,2) DEFAULT 0,
+  stock int DEFAULT 0,
   minimum_stock NUMERIC(10,2) DEFAULT 0,
   base_price NUMERIC(10,2),
   active BOOLEAN DEFAULT TRUE,

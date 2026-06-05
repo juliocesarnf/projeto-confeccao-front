@@ -1,3 +1,25 @@
+export type Product = {
+  id: number;
+  name: string;
+  description?: string;
+  category?: string;
+  active: boolean;
+};
+
+export type ProductVariation = {
+  id: number;
+  variation: string;
+  stock: number;
+  productId: number;
+};
+
+export type CreateProductPayload = {
+  name: string;
+  description?: string;
+  category?: string;
+  active: boolean;
+};
+
 export type ProductProcess = {
   id: number;
   name: string;

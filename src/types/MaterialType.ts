@@ -8,6 +8,7 @@ export type Material = {
   id: number;
   name: string;
   baseUnit: string;
+  quantityPerPackage?: number;
 };
 
 export type MaterialVariationInfo = {
