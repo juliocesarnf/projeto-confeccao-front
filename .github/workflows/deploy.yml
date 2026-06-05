@@ -25,7 +25,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: http://3.13.23.146:3000
+          VITE_API_URL: https://d3rjlo2739f0gl.cloudfront.net/api
 
       - name: Configurar credenciais AWS
         uses: aws-actions/configure-aws-credentials@v4
