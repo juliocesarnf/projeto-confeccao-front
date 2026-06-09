@@ -19,6 +19,15 @@ const OrderService = {
     return response.data;
   },
 
+  async createOrder(data: {
+    customerId: number;
+    dueDate: string;
+    items?: { variationId: number; quantity: number }[];
+  }): Promise<Order> {
+    const response = await API.post<Order>("/pedidos", data);
+    return response.data;
+  },
+
   async confirmOrder(id: number): Promise<{ status: number; message: string }> {
     const response = await API.patch(`/pedidos/${id}/confirmar`);
 
@@ -28,6 +37,18 @@ const OrderService = {
         response.data?.message ??
         response.data?.msg ??
         "Pedido confirmado com sucesso.",
+    };
+  },
+
+  async deliverOrder(id: number): Promise<{ status: number; message: string }> {
+    const response = await API.patch(`/pedidos/${id}/entregar`);
+
+    return {
+      status: response.status,
+      message:
+        response.data?.message ??
+        response.data?.msg ??
+        "Pedido entregue com sucesso.",
     };
   },
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Plus } from "lucide-react";
 import { toast } from "react-toastify";
 
 import NewCard from "../Cards/NewCard";
@@ -110,6 +111,15 @@ function Orders(): ReactNode {
           </button>
         ))}
       </div>
+
+      {/* FAB – novo pedido */}
+      <button
+        onClick={() => navigate("/orders/new")}
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-40"
+        aria-label="Novo pedido"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
 
       {/* Loading ou lista de pedidos filtrados */}
       {loading ? (

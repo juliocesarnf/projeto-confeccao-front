@@ -23,7 +23,7 @@ function OrderHeader({ title }: OrderHeaderProps) {
         </h1>
       </div>
 
-      <div className="text-sm text-gray-500 flex justify-between items-center gap-4">
+      <div className="text-sm text-gray-500 flex justify-between items-center gap-2 min-w-0">
         <span className="font-medium text-gray-800">
           Pedido: {String(order.id).padStart(6, "0")}
         </span>

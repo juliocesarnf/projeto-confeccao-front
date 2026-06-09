@@ -26,6 +26,11 @@ const MaterialsService = {
     return response.data;
   },
 
+  async createVariation(materialId: number, data: { variation: string; stock: number }): Promise<MaterialVariation> {
+    const response = await API.post<MaterialVariation>(`/materiais/${materialId}/variacoes`, data);
+    return response.data;
+  },
+
   async updateVariation(id: number, data: { variation: string; stock: number }): Promise<MaterialVariation> {
     const response = await API.put<MaterialVariation>(`/materiais/variacoes/${id}`, data);
     return response.data;
@@ -65,7 +70,27 @@ const MaterialsService = {
     }));
     const response = await API.post("/materiais/compra", payload);
     return response;
-  }
+  },
+
+  async incrementVariationStock(id: number): Promise<unknown> {
+    const response = await API.post("/materiais/compra", [{ materialVariationId: id, quantity: 1 }]);
+    return response.data;
+  },
+
+  async decrementVariationStock(id: number): Promise<unknown> {
+    const response = await API.post("/materiais/variacoes/remover-estoque", [{ materialVariationId: id, quantity: 1 }]);
+    return response.data;
+  },
+
+  async addStockPack(id: number): Promise<MaterialVariation> {
+    const response = await API.patch<MaterialVariation>(`/materiais/variacoes/${id}/adicionar-pacote`);
+    return response.data;
+  },
+
+  async removeStockPack(id: number): Promise<MaterialVariation> {
+    const response = await API.patch<MaterialVariation>(`/materiais/variacoes/${id}/remover-pacote`);
+    return response.data;
+  },
 };
 
 export default MaterialsService;

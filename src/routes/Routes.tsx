@@ -14,12 +14,15 @@ import { ProductionProvider } from "../context/ProductionContext";
 import { ProductProvider } from "../context/ProductContext";
 import { MaterialProvider } from "../context/MaterialContext";
 import OrderProduction from "../pages/Orders/OrderPages/OrderProduction";
+import OrderNew from "../pages/Orders/OrderPages/OrderNew";
 import Product from "../pages/Inventory/InventoryPages/Product";
 import ProductUpdate from "../pages/Inventory/InventoryPages/ProductUpdate";
 import ProductNew from "../pages/Inventory/InventoryPages/ProductNew";
 import MaterialPage from "../pages/Inventory/InventoryPages/Material";
 import MaterialUpdate from "../pages/Inventory/InventoryPages/MaterialUpdate";
 import MaterialNew from "../pages/Inventory/InventoryPages/MaterialNew";
+import MaterialVariationNew from "../pages/Inventory/InventoryPages/MaterialVariationNew";
+import ProductVariationNew from "../pages/Inventory/InventoryPages/ProductVariationNew";
 
 function RoutesApp(): ReactNode {
   return(
@@ -30,6 +33,7 @@ function RoutesApp(): ReactNode {
         <Routes>
           <Route path="/" element={<Orders />} /> 
           <Route path="/orders" element={<Orders />} />
+          <Route path="/orders/new" element={<OrderNew />} />
           <Route path="/orders/:id" element={<OrderParts />} />
           <Route path="/orders/:id/producao" element={<OrderProduction />} />
           <Route path="/orders/:id/materials" element={<OrderMaterials />} />
@@ -41,9 +45,11 @@ function RoutesApp(): ReactNode {
           <Route path="/inventory/product" element={<Product />} />
           <Route path="/inventory/product/update" element={<ProductUpdate />} />
           <Route path="/inventory/product/new" element={<ProductNew />} />
+          <Route path="/inventory/product/variation/new" element={<ProductVariationNew />} />
           <Route path="/inventory/material" element={<MaterialPage />} />
           <Route path="/inventory/material/update" element={<MaterialUpdate />} />
           <Route path="/inventory/material/new" element={<MaterialNew />} />
+          <Route path="/inventory/material/variation/new" element={<MaterialVariationNew />} />
           <Route path="/reports" element={<Reports />} />
         </Routes>
       </Layout>

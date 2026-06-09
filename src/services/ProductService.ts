@@ -18,8 +18,23 @@ const ProductService = {
     return response.data;
   },
 
-  async updateVariation(id: number, data: { variation: string; stock: number }): Promise<ProductVariation> {
+  async createVariation(productId: number, data: { size: string | null; color: string | null; stock: number }): Promise<ProductVariation> {
+    const response = await API.post<ProductVariation>(`/produtos/${productId}/variacoes`, data);
+    return response.data;
+  },
+
+  async updateVariation(id: number, data: { size: string | null; color: string | null; stock: number }): Promise<ProductVariation> {
     const response = await API.put<ProductVariation>(`/produtos/variacoes/${id}`, data);
+    return response.data;
+  },
+
+  async addStock(id: number): Promise<ProductVariation> {
+    const response = await API.patch<ProductVariation>(`/produtos/variacoes/${id}/adicionar`);
+    return response.data;
+  },
+
+  async removeStock(id: number): Promise<ProductVariation> {
+    const response = await API.patch<ProductVariation>(`/produtos/variacoes/${id}/remover`);
     return response.data;
   },
 

@@ -44,17 +44,7 @@ function Material(): ReactNode {
       <MaterialHeader />
 
       {/* Resumo de estoque */}
-      {!loading && variations.length > 0 && (
-        <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-md px-4 py-2.5">
-          <Package className="w-4 h-4 text-indigo-500 shrink-0" />
-          <span className="text-sm text-indigo-700">
-            <span className="font-semibold">{totalStock}</span> {selectedMaterial.baseUnit} em estoque total
-            &nbsp;·&nbsp;
-            <span className="font-semibold">{variations.length}</span>{" "}
-            {variations.length === 1 ? "variação" : "variações"}
-          </span>
-        </div>
-      )}
+
 
       {/* Variações */}
       <div>

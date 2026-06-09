@@ -33,8 +33,8 @@ function MaterialCard({ material }: Props) {
           <Layers className="w-3 h-3" />
           <span>
             {material.quantityPerPackage === 1
-              ? "Vendido individualmente"
-              : `${material.quantityPerPackage} por embalagem`}
+              ? "VENDIDO INDIVIDUALMENTE"
+              : `${material.quantityPerPackage} ${{ PAR: "PARES", M: "METROS", KG: "QUILOS", U: "UNIDADES" }[material.baseUnit] ?? material.baseUnit} POR EMBALAGEM`}
           </span>
         </div>
       )}

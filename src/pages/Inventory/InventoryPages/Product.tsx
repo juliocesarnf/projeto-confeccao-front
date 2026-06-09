@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Package } from "lucide-react";
 
 import { useProduct } from "../../../context/ProductContext";
 import ProductService from "../../../services/ProductService";
@@ -37,25 +36,10 @@ function Product(): ReactNode {
 
   if (!selectedProduct) return null;
 
-  const totalStock = variations.reduce((sum, v) => sum + v.stock, 0);
-
   return (
     <div className="w-full max-w-6xl flex flex-col gap-4 px-0 sm:px-4">
 
       <ProductHeader />
-
-      {/* Resumo de estoque */}
-      {!loading && variations.length > 0 && (
-        <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-md px-4 py-2.5">
-          <Package className="w-4 h-4 text-blue-500 shrink-0" />
-          <span className="text-sm text-blue-700">
-            <span className="font-semibold">{totalStock}</span> unidades em estoque total
-            &nbsp;·&nbsp;
-            <span className="font-semibold">{variations.length}</span>{" "}
-            {variations.length === 1 ? "variação" : "variações"}
-          </span>
-        </div>
-      )}
 
       {/* Variações */}
       <div>
@@ -71,7 +55,7 @@ function Product(): ReactNode {
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {variations.map((v) => (
+            {[...variations].sort((a, b) => b.stock - a.stock).map((v) => (
               <ProductVariationCard key={v.id} variation={v} />
             ))}
           </div>

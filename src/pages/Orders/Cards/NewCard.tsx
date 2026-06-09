@@ -37,6 +37,14 @@ function NewCard({ order }: Props) {
         <Check className="absolute top-2 right-2 w-7 h-7 text-green-600" />
       )}
 
+      {order.isFromMl && (
+        <img
+          src="/images/ml-logo.png"
+          alt="Mercado Livre"
+          className="absolute bottom-2 right-2 w-6 h-6 object-contain"
+        />
+      )}
+
       <div className="min-w-0 w-full">
         <p className="font-semibold truncate">{order.customerName}</p>
         <p className="text-sm">

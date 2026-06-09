@@ -8,6 +8,7 @@ export type Order = {
   totalItems: string;
   totalQuantity: string;
   enoughItems: boolean;
+  isFromMl: boolean;
 };
 
 export type OrderItem = {
