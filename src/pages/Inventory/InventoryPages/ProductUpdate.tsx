@@ -9,7 +9,8 @@ function ProductUpdate(): ReactNode {
   const { selectedProduct, selectedVariation, setSelectedVariation } = useProduct();
   const navigate = useNavigate();
 
-  const [variationName, setVariationName] = useState(selectedVariation?.variation ?? "");
+  const [size, setSize] = useState(selectedVariation?.size ?? "");
+  const [color, setColor] = useState(selectedVariation?.color ?? "");
   const [stock, setStock] = useState(selectedVariation?.stock ?? 0);
   const [saving, setSaving] = useState(false);
 
@@ -23,7 +24,8 @@ function ProductUpdate(): ReactNode {
     try {
       setSaving(true);
       const updated = await ProductService.updateVariation(selectedVariation.id, {
-        variation: variationName,
+        size: size || null,
+        color: color || null,
         stock,
       });
       setSelectedVariation(updated);
@@ -72,11 +74,23 @@ function ProductUpdate(): ReactNode {
       {/* Formulário */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">Variação</label>
+          <label className="text-sm font-medium text-gray-700">Tamanho</label>
           <input
             type="text"
-            value={variationName}
-            onChange={(e) => setVariationName(e.target.value)}
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+            placeholder="Ex: P, M, G, GG..."
+            className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-700">Cor</label>
+          <input
+            type="text"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            placeholder="Ex: Vermelho, Azul..."
             className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
           />
         </div>

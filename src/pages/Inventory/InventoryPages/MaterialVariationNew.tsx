@@ -18,6 +18,7 @@ function MaterialVariationNew(): ReactNode {
   }
 
   async function handleSave() {
+    if (!selectedMaterial) return;
     if (!variationName.trim()) {
       toast.error("O nome da variação é obrigatório.", { position: "top-right", autoClose: 4000 });
       return;

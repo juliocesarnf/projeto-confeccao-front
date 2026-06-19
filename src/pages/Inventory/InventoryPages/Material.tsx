@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Package } from "lucide-react";
 import { useMaterial } from "../../../context/MaterialContext";
 import MaterialsService from "../../../services/MaterialService";
 import type { MaterialVariation } from "../../../types/MaterialType";
@@ -35,8 +34,6 @@ function Material(): ReactNode {
   }, [selectedMaterial, navigate]);
 
   if (!selectedMaterial) return null;
-
-  const totalStock = variations.reduce((sum, v) => sum + v.stock, 0);
 
   return (
     <div className="w-full max-w-6xl flex flex-col gap-4 px-0 sm:px-4">
