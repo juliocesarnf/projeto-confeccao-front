@@ -93,7 +93,9 @@ function Orders(): ReactNode {
     fetchOrders();
   }, []);
 
-  const filteredOrders = orders.filter((order) => order.status === status);
+  const filteredOrders = orders
+    .filter((order) => order.status === status)
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
   const CardComponent  = CARD_MAP[status];
 
   return (
